@@ -16,7 +16,7 @@ app.use(async (req, res, next) => {
             const response = await client.country(req.ip);
             const isoCode = response.country.isoCode;
             console.log('request from:', isoCode);
-            if (isoCode === 'BRA') {
+            if (isoCode === 'BR') {
                 //redirect brazil traffic to view portuguese version of the page by default
                 res.redirect(req.url.replace("/en", "/pt"));
                 return;
