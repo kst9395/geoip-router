@@ -2,7 +2,7 @@
 
 A simple middleware application made for redirecting visitor to corresponding language.
 
-This application uses MaxMind GeoLite database to detect request location.
+This middleware use GeoJS to determine country base on IP
 
 ## Getting started
 
