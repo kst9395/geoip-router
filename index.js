@@ -21,7 +21,7 @@ async function getCountry(ip) {
 const geoip = async (req, res, next) => {
     try {
         if (req.path == '/') {
-            const country = await getCountry(req.ip);
+            const country = await getCountry(req.get('X-Forwarded-IP'));
             if (!country) {
                 console.log('no country for ip:' + req.ip)
                 next();
