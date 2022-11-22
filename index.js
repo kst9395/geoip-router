@@ -1,36 +1,50 @@
-const config = require('dotenv').config().parsed;
-const express = require('express');
-const WebServiceClient = require('@maxmind/geoip2-node').WebServiceClient;
-//third parameter can be ommited if subscribe to premium geoip2 service
-const client = new WebServiceClient(config.MAXMIND_ACCOUNT_ID, config.MAXMIND_LICENSE_KEY, { host: 'geolite.info' });
+const express = require('express')
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const env = (name) => process.env[name];
 
 const app = express();
 
-const port = config.PORT;
 
-app.use(async (req, res, next) => {
+async function getCountry(ip) {
     try {
-        //let say the static site is with format of /<launguage>/content   
-        if (req.url.startsWith("/en")) {
-            // custom redirect logic can be implemented here
-            const response = await client.country(req.ip);
-            const isoCode = response.country.isoCode;
-            console.log('request from:', isoCode);
-            if (isoCode === 'BR') {
-                //redirect brazil traffic to view portuguese version of the page by default
-                res.redirect(req.url.replace("/en", "/pt"));
+        const response = await fetch(`https://get.geojs.io/v1/ip/country/${ip}.json`);
+        if (response.ok) {
+            const body = await response.json()
+            return body.country || undefined;
+        }
+    } catch (error) {
+        console.error('failed to request geojs', error)
+        return undefined;
+    }
+};
+
+const geoip = async (req, res, next) => {
+    try {
+        if (req.path == '/') {
+            const country = await getCountry(req.ip);
+            if (!country) {
+                console.log('no country for ip:' + req.ip)
+                next();
+                return;
+            }
+            if (country == 'PT' || country == 'BR') {
+                res.redirect('/pt')
+                return;
+            } else {
+                res.redirect("/en")
                 return;
             }
         }
-        //fallback to static middleware
         next();
     } catch (error) {
         console.error(error);
-        //in case error calling geolite api
         next();
     }
-});
+}
 
-app.use(express.static(config.STATIC_PATH));
+app.use(geoip);
 
-app.listen(port, () => console.log("server started"));
+app.use(express.static(env('STATIC_FOLDER')))
+
+
+app.listen(env('PORT'), () => console.log('listening on port ', env('PORT')))
